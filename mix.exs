@@ -15,7 +15,8 @@ defmodule FtChat.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     [applications: [:logger, :cowboy],
-     mod: {FtChat, []}]
+     mod: {FtChat, []},
+     env: [rooms: ["Alpha", "Beta", "Gamma"]]]
   end
 
   # Dependencies can be Hex packages:
