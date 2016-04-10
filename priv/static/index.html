@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Fault-tolerant chat</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+
+      #text {
+        width: 100%;
+        margin: 0;
+        height: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="text"></textarea>
+    <script>
+      var text = document.getElementById('text');
+
+      var ws = new WebSocket('ws://localhost:8000/chat');
+      ws.onmessage = function(evt) {
+        console.log(evt);
+      };
+      // ws.connect();
+
+      var onOpen = function() {
+        ws.send('Hello World');
+        setTimeout(onOpen, 1000);
+      };
+
+      ws.onopen = onOpen;
+    </script>
+  </body>
+</html>
