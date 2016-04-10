@@ -10,7 +10,7 @@ defmodule FtChat.Distribution do
                 |> Enum.map(fn i ->
                     Enum.at nodes, (rem(i - 1, num_nodes))
                 end)
-            %HashRing {
+            %NodeRing {
                 rules: List.to_tuple(ring),
                 replication: replication,
                 partitions: partitions
@@ -26,5 +26,5 @@ defmodule FtChat.Distribution do
         end
 
     end
-    
+
 end
