@@ -13,7 +13,7 @@ defmodule FtChat do
     sup = Supervisor.start_link children, opts
 
     rooms = Application.get_env :ft_chat, :rooms, []
-    
+
     Enum.each rooms, &FtChat.ChatRoom.Manager.create_room/1
 
     sup
@@ -22,6 +22,7 @@ defmodule FtChat do
   def start_webserver do
     routes = [
       {"/", :cowboy_static, {:priv_file, :ft_chat, "static/index.html"}},
+      {"/assets/[...]", :cowboy_static, {:priv_dir, :ft_chat, "static/"}},
       {"/chat", FtChat.ChatHandler, []}
     ]
 
