@@ -23,28 +23,4 @@ defmodule FtChat do
     {:ok, _pid} = :cowboy.start_http :http, 100, [port: 8000], [env: [dispatch: dispatch]]
   end
 
-  defmodule ChatHandler do
-
-    def init({:tcp, :http}, req, opts) do
-      {:upgrade, :protocol, :cowboy_websocket, req, opts}
-    end
-
-    def websocket_init(:tcp, req, _opts) do
-      req = :cowboy_req.compact req
-      {:ok, req, nil}
-    end
-
-    def websocket_handle({:text, text}, req, st) do
-      IO.puts "websocket_handle(#{inspect text})"
-      {:reply, {:text, text}, req, st}
-    end
-
-    def websocket_info(_msg, req, st) do
-      {:ok, req, st}
-    end
-
-    def websocket_terminate(_reason, _req, _st) do
-      :ok
-    end
-  end
 end
