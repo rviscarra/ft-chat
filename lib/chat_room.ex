@@ -53,16 +53,26 @@ defmodule FtChat.ChatRoom do
       GenServer.start_link __MODULE__, name
   end
 
+  defp _cast(chat_room, message) do
+    case Manager.get_room chat_room do
+      :undefined ->
+        IO.puts "Can't find #{inspect chat_room}"
+        :ok
+      {:ok, pid} ->
+        GenServer.cast pid, message
+    end
+  end
+
   def join(chat_room, user) do
-      GenServer.cast chat_room, {:join, user}
+      _cast chat_room, {:join, user, self}
   end
 
   def leave(chat_room, user) do
-      GenServer.cast chat_room, {:leave, user}
+      _cast chat_room, {:leave, user, self}
   end
 
-  def post(chat_room, message) do
-      GenServer.cast chat_room, {:post, message}
+  def post(chat_room, from_user, message) do
+      _cast chat_room, {:post, from_user, message}
   end
 
   def init(name) do
@@ -72,18 +82,19 @@ defmodule FtChat.ChatRoom do
       }}
   end
 
-  def handle_cast({:join, user}, st) do
-      st = %{ st | users: HashSet.put(st.users, user) }
+  def handle_cast({:join, _user, pid}, st) do
+      st = %{ st | users: HashSet.put(st.users, pid) }
       {:noreply, st}
   end
 
-  def handle_cast({:leave, user}, st) do
-      st = %{ st | users: HashSet.delete(st.users, user) }
+  def handle_cast({:leave, _user, pid}, st) do
+      st = %{ st | users: HashSet.delete(st.users, pid) }
       {:noreply, st}
   end
 
-  def handle_cast({:post, message}, st) do
-      Enum.each st.users &(send &1, {:chat_message, st.name, message})
-      {:noreply, st}
+  def handle_cast({:post, from_user, message}, st) do
+    IO.puts "Posting #{message}"
+    Enum.each st.users, &(send &1, {:chat_message, from_user, st.name, message})
+    {:noreply, st}
   end
 end

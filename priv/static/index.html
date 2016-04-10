@@ -2,38 +2,76 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Fault-tolerant chat</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <script language="javascript" src="/assets/js/app.js"></script>
     <style>
-      body, html {
-        margin: 0;
-        padding: 0;
-        border: 0;
+
+      #text-container {
+        width: 100%;
+        padding: 5px 5px 0 0;
+        padding-bottom: 5px;
+        position: fixed;
+        bottom: 0px;
+        background-color: #dedede;
       }
 
-      #text {
+      #message {
         width: 100%;
+      }
+
+      #send {
+        width: 100%;
+      }
+
+      #chat {
+        background-color: #f3f3f3;
         margin: 0;
-        height: 500px;
+        height: 97%;
+        overflow-y: auto;
+      }
+
+      .chat-message {
+        margin: 5px;
+        background-color: #dedede;
+      }
+
+      .toolbar {
+        margin-top: 5px;
+        margin-bottom: 5px;
       }
     </style>
   </head>
   <body>
-    <textarea id="text"></textarea>
-    <script>
-      var text = document.getElementById('text');
-
-      var ws = new WebSocket('ws://localhost:8000/chat');
-      ws.onmessage = function(evt) {
-        console.log(evt);
-      };
-      // ws.connect();
-
-      var onOpen = function() {
-        ws.send('Hello World');
-        setTimeout(onOpen, 1000);
-      };
-
-      ws.onopen = onOpen;
-    </script>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-xs-2">
+          <a class="btn btn-default toolbar" id="rooms" href="#rooms">Rooms</a>
+        </div>
+      </div>
+      <ul class="list-inline">
+        <li>
+          <strong>Rooms:</strong>
+        </li>
+        <li>
+          <a class="btn btn-default">Alpha</a>
+        </li>
+      </ul>
+      <div id="chat">
+      </div>
+    </div>
+    <div id="text-container">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-xs-10 col-md-11">
+            <input type="text" id="message" placeholder="Message..." />
+          </div>
+          <div class="col-xs-2 col-md-1">
+            <input type="button" id="send" value="Enviar" />
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
