@@ -44,7 +44,7 @@ defmodule FtChat.ChatRoom do
   end
 
   defmodule ChatRoomState do
-      defstruct [:name, :users]
+      defstruct [:name, :users, :history]
   end
 
   use GenServer
@@ -53,7 +53,7 @@ defmodule FtChat.ChatRoom do
       GenServer.start_link __MODULE__, name
   end
 
-  defp _cast(chat_room, message) do
+  defp _cast(chat_room, message, false) do
     case Manager.get_room chat_room do
       :undefined ->
         IO.puts "Can't find #{inspect chat_room}"
@@ -63,38 +63,63 @@ defmodule FtChat.ChatRoom do
     end
   end
 
+  defp _cast(chat_room, message, true) do
+    FtChat.Distribution.RemoteChatRoomClient.remote_cast chat_room, message
+    _cast chat_room, message, false
+  end
+
   def join(chat_room, user) do
-      _cast chat_room, {:join, user, self}
+      _cast chat_room, {:join, user, self}, true
   end
 
   def leave(chat_room, user) do
-      _cast chat_room, {:leave, user, self}
+      _cast chat_room, {:leave, user}, true
   end
 
   def post(chat_room, from_user, message) do
-      _cast chat_room, {:post, from_user, message}
+      _cast chat_room, {:post, from_user, message}, true
+  end
+
+  def remote_message(chat_room, message) do
+    _cast chat_room, message, false
   end
 
   def init(name) do
       {:ok, %ChatRoomState{
           name: name,
-          users: HashSet.new
+          users: HashDict.new,
+          history: :queue.new
       }}
   end
 
-  def handle_cast({:join, _user, pid}, st) do
-      st = %{ st | users: HashSet.put(st.users, pid) }
-      {:noreply, st}
+  def handle_cast({:join, user, pid}, st) do
+    st = %{ st | users: HashDict.put(st.users, user, pid) }
+    send pid, {:chat_history, st.name, :queue.to_list(st.history)}
+    {:noreply, st}
   end
 
-  def handle_cast({:leave, _user, pid}, st) do
-      st = %{ st | users: HashSet.delete(st.users, pid) }
-      {:noreply, st}
+  def handle_cast({:leave, user}, st) do
+    st = %{ st | users: HashDict.delete(st.users, user) }
+    {:noreply, st}
   end
 
   def handle_cast({:post, from_user, message}, st) do
-    IO.puts "Posting #{message}"
-    Enum.each st.users, &(send &1, {:chat_message, from_user, st.name, message})
+    st =
+      if HashDict.has_key? st.users, from_user do
+        Enum.each st.users, (fn {_, pid} ->
+          send pid, {:chat_message, from_user, st.name, message}
+        end)
+        history =
+          if :queue.len(st.history) == 30 do
+            {_, history} = :queue.out st.history
+            history
+          else
+            st.history
+          end
+        %{ st | history: :queue.in({from_user, message}, history) }
+      else
+        st
+      end
     {:noreply, st}
   end
 end

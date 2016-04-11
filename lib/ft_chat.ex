@@ -6,7 +6,9 @@ defmodule FtChat do
 
     children = [
       worker(__MODULE__, [], function: :start_webserver),
-      worker(FtChat.ChatRoom.Manager, [])
+      worker(FtChat.ChatRoom.Manager, []),
+      worker(FtChat.Distribution.RemoteChatRoomClient, []),
+      worker(FtChat.Distribution.RemoteChatRoomServer, [])
     ]
 
     opts = [strategy: :one_for_one, name: FtChat.Supervisor]

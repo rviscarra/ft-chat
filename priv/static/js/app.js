@@ -52,8 +52,17 @@
     var chat_text = document.getElementById('chat');
 
     client.onmessage = function(cmd) {
-      if(cmd.action && cmd.action === 'message') {
-        chat_text.innerHTML += '<div class="chat-message">['+ cmd.user +']: '+ cmd.message + '</div>';
+      if(cmd.action) {
+        if(cmd.action === 'message') {
+          chat_text.innerHTML += '<div class="chat-message">['+ cmd.user +']: '+ cmd.message + '</div>';
+        } else if(cmd.action === 'history') {
+          for (var i = 0; i < cmd.history.length; i++) {
+              var hi = cmd.history[i];
+              chat_text.innerHTML += '<div class="chat-message">['+ hi.user +']: '+ hi.message + '</div>';
+          }
+        } else {
+          console.log(cmd);
+        }
       }
     };
 

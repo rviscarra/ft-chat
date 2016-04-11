@@ -40,29 +40,32 @@ defmodule FtChat.ChatHandler do
 
   def websocket_info({:chat_message, from_user, room, message}, req, st) do
     {:ok, text} = JSON.encode(%{action: :message, user: from_user, room: room, message: message})
-    IO.puts "Sending '#{message}' => #{st.user}"
     {:reply, {:text, text}, req, st}
   end
 
-  def websocket_terminate(_reason, _req, _st) do
-    :ok
+  def websocket_info({:chat_history, room, history}, req, st) do
+    history = Enum.map history, (fn {user, message} -> %{user: user, message: message} end)
+    {:ok, text} = JSON.encode(%{action: :history, room: room, history: history})
+    {:reply, {:text, text}, req, st}
+  end
+
+  def websocket_terminate(_reason, _req, st) do
+    Enum.each st.rooms, (fn room ->
+      FtChat.ChatRoom.leave room, st.user
+    end)
   end
 
   defp handle_message {:ok, json_message}, st do
     case json_message do
       %{ "action" => "login", "user" => user } ->
-        IO.puts "#{user} logged in."
         {:ok, ChatConnState.set_user(st, user)}
       %{ "action" => "join",  "room" => room } ->
-        IO.puts "#{st.user} joined #{room}."
         FtChat.ChatRoom.join room, st.user
         {:ok, ChatConnState.add_room(st, room)}
       %{ "action" => "leave", "room" => room } ->
-        IO.puts "#{st.user} left #{room}."
         FtChat.ChatRoom.leave room, st.user
         {:ok, ChatConnState.del_room(st, room)}
       %{ "action" => "post", "room" => room, "message" => message} ->
-        IO.puts "#{st.user} posted to #{room}."
         FtChat.ChatRoom.post room, st.user, message
         {:ok, st}
       _ ->
