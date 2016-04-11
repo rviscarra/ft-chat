@@ -16,7 +16,15 @@ defmodule FtChat.Mixfile do
   def application do
     [applications: [:logger, :cowboy],
      mod: {FtChat, []},
-     env: [rooms: ["Alpha", "Beta", "Gamma"]]]
+     env: [
+       rooms: ["Alpha", "Beta", "Gamma"],
+       nodes: [
+         :node1,
+         :node2,
+         :node3
+       ]
+     ]
+    ]
   end
 
   # Dependencies can be Hex packages:
@@ -34,4 +42,20 @@ defmodule FtChat.Mixfile do
         {:json, "~> 0.3.0"}
     ]
   end
+end
+
+defmodule Mix.Tasks.RunNode do
+  use Mix.Task
+
+  def run([]) do
+    Mix.shell.error "Expected --port PORT"
+  end
+
+  def run(args) do
+    {opts, _, _} = OptionParser.parse args, strict: [port: :integer]
+
+    Application.put_env(:ft_chat, :port, opts[:port])
+    Mix.Task.run("run", args)
+  end
+
 end

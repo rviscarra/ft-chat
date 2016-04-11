@@ -10,13 +10,13 @@ defmodule FtChat do
     ]
 
     opts = [strategy: :one_for_one, name: FtChat.Supervisor]
-    sup = Supervisor.start_link children, opts
+    supervision = Supervisor.start_link children, opts
 
     rooms = Application.get_env :ft_chat, :rooms, []
 
     Enum.each rooms, &FtChat.ChatRoom.Manager.create_room/1
 
-    sup
+    supervision
   end
 
   def start_webserver do
@@ -28,7 +28,9 @@ defmodule FtChat do
 
     dispatch = :cowboy_router.compile [{:_, routes}]
 
-    {:ok, _pid} = :cowboy.start_http :http, 100, [port: 8000], [env: [dispatch: dispatch]]
+    port = Application.get_env :ft_chat, :port, 8000
+
+    {:ok, _pid} = :cowboy.start_http :http, 100, [port: port], [env: [dispatch: dispatch]]
   end
 
 end
