@@ -1,5 +1,6 @@
 defmodule FtChat do
   use Application
+  require Logger
 
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
@@ -31,6 +32,8 @@ defmodule FtChat do
     dispatch = :cowboy_router.compile [{:_, routes}]
 
     port = Application.get_env :ft_chat, :port, 8000
+
+    Logger.info "Starting WebSocket server on *:#{port}"
 
     {:ok, _pid} = :cowboy.start_http :http, 100, [port: port], [env: [dispatch: dispatch]]
   end
