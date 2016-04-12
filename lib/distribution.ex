@@ -44,8 +44,9 @@ defmodule FtChat.Distribution do
         {:ok, nil}
       end
 
-      def handle_cast({:remote_message, room, message}) do
+      def handle_cast({:remote_message, room, message}, st) do
         FtChat.ChatRoom.remote_message(room, message)
+        {:noreply, st}
       end
 
     end
@@ -74,6 +75,7 @@ defmodule FtChat.Distribution do
           NodeRing.get_nodes_for(ring, room)
           |> Enum.filter(&(&1 != node()))
         message = {:remote_message, room, message}
+        IO.puts "Replicating message to #{inspect nodes}"
         GenServer.abcast(nodes, FtChat.Distribution.RemoteChatRoomServer, message)
         {:noreply, ring}
       end
