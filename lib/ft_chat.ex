@@ -2,6 +2,17 @@ defmodule FtChat do
   use Application
   require Logger
 
+  def try_connect(nodes) do
+    Enum.each nodes, &Node.ping/1
+    receive do
+      _ -> :ok
+    after 1000 ->
+      alive = Node.list :connected
+      # IO.puts "#{node} => #{inspect alive}" 
+      try_connect nodes
+    end
+  end
+
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
@@ -15,8 +26,10 @@ defmodule FtChat do
     opts = [strategy: :one_for_one, name: FtChat.Supervisor]
     supervision = Supervisor.start_link children, opts
 
-    rooms = Application.get_env :ft_chat, :rooms, []
+    nodes = Application.get_env :ft_chat, :nodes, []
+    spawn(fn -> try_connect nodes end)
 
+    rooms = Application.get_env :ft_chat, :rooms, []
     Enum.each rooms, &FtChat.ChatRoom.Manager.create_room/1
 
     supervision

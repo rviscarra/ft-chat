@@ -48,78 +48,74 @@ defmodule FtChat.ChatRoom do
   end
 
   use GenServer
+  alias FtChat.Distribution.RemoteChatRoomClient, as: RemoteChatRoomClient
 
   def start_link(name) do
       GenServer.start_link __MODULE__, name
   end
 
-  defp _cast(chat_room, message, false) do
+  defp _cast(chat_room, message, level) do
     case Manager.get_room chat_room do
       :undefined ->
         IO.puts "Can't find #{inspect chat_room}"
         :ok
       {:ok, pid} ->
-        GenServer.cast pid, message
+        GenServer.cast pid, {level, message}
     end
   end
 
-  defp _cast(chat_room, message, true) do
-    FtChat.Distribution.RemoteChatRoomClient.remote_cast chat_room, message
-    _cast chat_room, message, false
-  end
-
   def join(chat_room, user) do
-      _cast chat_room, {:join, user, self}, true
+    RemoteChatRoomClient.cast chat_room, {:join, user, self}
   end
 
   def leave(chat_room, user) do
-      _cast chat_room, {:leave, user}, true
+    RemoteChatRoomClient.cast chat_room, {:leave, user}
   end
 
   def post(chat_room, from_user, message) do
-      _cast chat_room, {:post, from_user, message}, true
+    RemoteChatRoomClient.cast chat_room, {:post, from_user, message}
   end
 
-  def remote_message(chat_room, message) do
-    _cast chat_room, message, false
+  def handle_message(chat_room, message, level) do
+    _cast chat_room, message, level
   end
 
   def init(name) do
-      {:ok, %ChatRoomState{
-          name: name,
-          users: HashDict.new,
-          history: :queue.new
-      }}
+    {:ok, %ChatRoomState{
+        name: name,
+        users: %{},
+        history: :queue.new
+    }}
   end
 
-  def handle_cast({:join, user, pid}, st) do
-    st = %{ st | users: HashDict.put(st.users, user, pid) }
-    send pid, {:chat_history, st.name, :queue.to_list(st.history)}
+  def handle_cast({level, {:join, user, pid}}, st) do
+    st = %{ st | users: put_in(st.users, [user], {level, pid}) }
+    if level == :master do
+      send pid, {:chat_history, st.name, :queue.to_list(st.history)}
+    end
     {:noreply, st}
   end
 
-  def handle_cast({:leave, user}, st) do
-    st = %{ st | users: HashDict.delete(st.users, user) }
+  def handle_cast({_level, {:leave, user}}, st) do
+    st = %{ st | users: Map.delete(st.users, user) }
     {:noreply, st}
   end
 
-  def handle_cast({:post, from_user, message}, st) do
-    st =
-      if HashDict.has_key? st.users, from_user do
-        Enum.each st.users, (fn {_, pid} ->
-          send pid, {:chat_message, from_user, st.name, message}
-        end)
-        history =
-          if :queue.len(st.history) == 30 do
-            {_, history} = :queue.out st.history
-            history
-          else
-            st.history
-          end
-        %{ st | history: :queue.in({from_user, message}, history) }
-      else
-        st
+  def handle_cast({_level, {:post, from_user, message}}, st) do
+    Enum.each st.users, (fn {_, {level, pid}} ->
+      if level == :master do
+        send pid, {:chat_message, from_user, st.name, message}
       end
+    end)
+    history =
+      if :queue.len(st.history) == 30 do
+        {_, history} = :queue.out st.history
+        history
+      else
+        st.history
+      end
+    st = %{ st | history: :queue.in({from_user, message}, history) }
     {:noreply, st}
   end
+
 end

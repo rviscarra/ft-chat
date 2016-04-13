@@ -44,8 +44,8 @@ defmodule FtChat.Distribution do
         {:ok, nil}
       end
 
-      def handle_cast({:remote_message, room, message}, st) do
-        FtChat.ChatRoom.remote_message(room, message)
+      def handle_cast({:remote_message, room, message, level}, st) do
+        FtChat.ChatRoom.handle_message room, message, level
         {:noreply, st}
       end
 
@@ -53,6 +53,7 @@ defmodule FtChat.Distribution do
 
     defmodule RemoteChatRoomClient do
       use GenServer
+      alias FtChat.ChatRoom, as: ChatRoom
 
       @process_name __MODULE__
 
@@ -60,7 +61,7 @@ defmodule FtChat.Distribution do
         GenServer.start_link __MODULE__, nil, name: @process_name
       end
 
-      def remote_cast(room, message) do
+      def cast(room, message) do
         GenServer.cast @process_name, {:remote_cast, room, message}
       end
 
@@ -70,13 +71,34 @@ defmodule FtChat.Distribution do
         {:ok, ring}
       end
 
+      defp broadcast_message(nodes, active_nodes, room, message, level) do
+        case nodes do
+          [] -> :ok
+          [target_node | rest] ->
+            level =
+              if target_node == node() do
+                ChatRoom.handle_message room, message, level
+                IO.puts "Local: #{inspect message}(#{level})"
+                :slave
+              else if HashSet.member? active_nodes, target_node do
+                  IO.puts "#{node} => #{inspect message} => #{target_node}(#{level})"
+                  GenServer.abcast([target_node], FtChat.Distribution.RemoteChatRoomServer, {:remote_message, room, message, level})
+                  :slave
+                else
+                  level
+                end
+              end
+            broadcast_message rest, active_nodes, room, message, level
+        end
+      end
+
       def handle_cast({:remote_cast, room, message}, ring) do
-        nodes =
-          NodeRing.get_nodes_for(ring, room)
-          |> Enum.filter(&(&1 != node()))
-        message = {:remote_message, room, message}
-        IO.puts "Replicating message to #{inspect nodes}"
-        GenServer.abcast(nodes, FtChat.Distribution.RemoteChatRoomServer, message)
+        alive_nodes =
+          Node.list(:connected)
+          |> List.foldl(HashSet.new, &HashSet.put(&2, &1))
+        nodes = NodeRing.get_nodes_for(ring, room)
+        IO.puts "Alive = #{inspect alive_nodes}. Nodes = #{inspect nodes}"
+        broadcast_message nodes, alive_nodes, room, message, :master
         {:noreply, ring}
       end
 

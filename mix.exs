@@ -19,9 +19,9 @@ defmodule FtChat.Mixfile do
      env: [
        rooms: ["Alpha", "Beta", "Gamma"],
        nodes: [
-         :node1,
-         :node2,
-         :node3
+         :node1@localhost,
+         :node2@localhost,
+         :node3@localhost
        ]
      ]
     ]
@@ -55,6 +55,7 @@ defmodule Mix.Tasks.RunNode do
     {opts, _, _} = OptionParser.parse args, strict: [port: :integer]
 
     Application.put_env(:ft_chat, :port, opts[:port])
+    Mix.Task.run("compile", [])
     Mix.Task.run("run", args)
   end
 
