@@ -8,7 +8,7 @@ defmodule FtChat do
       _ -> :ok
     after 1000 ->
       alive = Node.list :connected
-      # IO.puts "#{node} => #{inspect alive}" 
+      # IO.puts "#{node} => #{inspect alive}"
       try_connect nodes
     end
   end
@@ -39,6 +39,7 @@ defmodule FtChat do
     routes = [
       {"/", :cowboy_static, {:priv_file, :ft_chat, "static/index.html"}},
       {"/assets/[...]", :cowboy_static, {:priv_dir, :ft_chat, "static/"}},
+      {"/rooms", FtChat.RoomHandler, []},
       {"/chat", FtChat.ChatHandler, []}
     ]
 

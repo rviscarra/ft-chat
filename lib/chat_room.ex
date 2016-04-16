@@ -20,6 +20,13 @@ defmodule FtChat.ChatRoom do
       end
     end
 
+    def all_rooms() do
+      :ets.tab2list(@table_name)
+      |> Enum.map (fn {room_name, _pid} ->
+        room_name
+      end)
+    end
+
     def create_room(room_name) do
       GenServer.call @process_name, {:create_room, room_name}
     end
