@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Fault-tolerant chat</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <script language="javascript" src="/assets/js/angular.js"></script>
     <script language="javascript" src="/assets/js/app.js"></script>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <style>
+
+      body {
+        font-family: 'Open Sans', Verdana;
+      }
 
       #text-container {
         width: 100%;
@@ -41,23 +47,55 @@
         margin-top: 5px;
         margin-bottom: 5px;
       }
+
+      .fixed-button {
+        width: 80px;
+      }
+
+      .green {
+        color: green;
+      }
+
+      .red {
+        color: red;
+      }
     </style>
   </head>
-  <body>
+  <body ng-app="ft-chat" ng-controller="ChatController as chat">
     <div class="container-fluid">
       <div class="row">
-        <div class="col-xs-2">
-          <a class="btn btn-default toolbar" id="rooms" href="#rooms">Rooms</a>
+        <div class="col-xs-12">
+          <div class="media">
+            <a href="#" class="media-left">
+              <img class="media-object" src="/assets/logo.png" />
+            </a>
+            <div class="media-body">
+              <h3 class="media-heading">Fault Tolerant Chat</h3>
+            </div>
+          </div>
+          <!--
+          <h3>Fault tolerant chat</h3> -->
         </div>
       </div>
-      <ul class="list-inline">
-        <li>
-          <strong>Rooms:</strong>
-        </li>
-        <li>
-          <a class="btn btn-default">Alpha</a>
-        </li>
-      </ul>
+      <div class="row">
+        <div class="col-xs-12">
+          <ul class="list-inline">
+            <li>
+              <strong>Rooms:</strong>
+            </li>
+            <li ng-repeat="room in allRooms">
+              <a class="btn fixed-button" ng-class="selectedRoom == room ? 'btn-success' : 'btn-default'" ng-click="chat.selectRoom(room)">{{room}}</a>
+            </li>
+            <li ng-if="!connectedEndPoint" class="red">
+              <strong>Server disconnected</strong>
+            </li>
+            <li ng-if="connectedEndPoint" class="green">
+              <strong>connected@{{connectedEndPoint}}</strong>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div id="chat">
       </div>
     </div>
