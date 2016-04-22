@@ -30,6 +30,7 @@ ftChat.service 'ChatService',
 
     connect: () ->
       try
+
         @ws = new WebSocket('ws://' + @endPoint + '/chat')
         @ws.onopen = () =>
           console.log "Connected to #{@endPoint}"
@@ -44,7 +45,9 @@ ftChat.service 'ChatService',
             if @blacklist.length == endPoints.length
               @blacklist = []
             @endPoint = chooseRandomEndpoint @blacklist
-            @connect()
+            setTimeout () =>
+              @connect()
+            , 500
 
           @status = @ws.readyState
 
