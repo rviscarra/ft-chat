@@ -34,13 +34,15 @@
       #chat {
         background-color: #f3f3f3;
         margin: 0;
-        height: 97%;
+        min-height: 500px;
+        margin-bottom: 30px;
         overflow-y: auto;
       }
 
       .chat-message {
-        margin: 5px;
+        margin: 3px;
         background-color: #dedede;
+        padding: 2px;
       }
 
       .toolbar {
@@ -59,54 +61,73 @@
       .red {
         color: red;
       }
+
+      #title {
+        margin: 0;
+        padding: 5px 0 5px 0;
+      }
+
+      .middle {
+        vertical-align: middle;
+        float: none;
+        display: inline-block;
+      }
+
+      .debug {
+        background-color: red;
+        min-height: 100px;
+      }
+
+      .connection {
+        padding-bottom: 5px;
+      }
     </style>
   </head>
   <body ng-app="ft-chat" ng-controller="ChatController as chat">
     <div class="container-fluid">
       <div class="row">
-        <div class="col-xs-12">
-          <div class="media">
-            <a href="#" class="media-left">
-              <img class="media-object" src="/assets/logo.png" />
-            </a>
-            <div class="media-body">
-              <h3 class="media-heading">Fault Tolerant Chat</h3>
+        <div class="col-xs-9">
+          <div class="row">
+            <div class="col-xs-12">
+              <h3 id="title">Fault Tolerant Chat</h3>
+              <div ng-if="!connectedEndPoint" class="connection red">
+                <strong>Server disconnected</strong>
+              </div>
+              <div ng-if="connectedEndPoint" class="connection green">
+                <strong>{{chat.username}}@{{connectedEndPoint}}</strong>
+              </div>
             </div>
           </div>
-          <!--
-          <h3>Fault tolerant chat</h3> -->
+          <div class="row">
+            <div class="col-xs-12">
+              <ul class="list-inline">
+                <li ng-repeat="room in allRooms">
+                  <a class="btn fixed-button" ng-class="selectedRoom == room ? 'btn-success' : 'btn-default'" ng-click="chat.selectRoom(room)">{{room}}</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-xs-3">
+          <img class="pull-right middle" src="/assets/logo.png" />
         </div>
       </div>
-      <div class="row">
-        <div class="col-xs-12">
-          <ul class="list-inline">
-            <li>
-              <strong>Rooms:</strong>
-            </li>
-            <li ng-repeat="room in allRooms">
-              <a class="btn fixed-button" ng-class="selectedRoom == room ? 'btn-success' : 'btn-default'" ng-click="chat.selectRoom(room)">{{room}}</a>
-            </li>
-            <li ng-if="!connectedEndPoint" class="red">
-              <strong>Server disconnected</strong>
-            </li>
-            <li ng-if="connectedEndPoint" class="green">
-              <strong>connected@{{connectedEndPoint}}</strong>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div id="chat">
+    </div>
+    <div id="chat">
+      <h4 ng-if="selectedRoom">Canal {{selectedRoom}}</h4>
+      <div class="chat-message" ng-repeat="message in rooms[selectedRoom] track by $index">
+        <strong>{{message.user}} dice: </strong>
+        <p>{{message.text}}</p>
       </div>
     </div>
     <div id="text-container">
       <div class="container-fluid">
         <div class="row">
           <div class="col-xs-10 col-md-11">
-            <input type="text" id="message" placeholder="Message..." />
+            <input type="text" ng-disabled="!selectedRoom" ng-keyup="$event.keyCode == 13 && chat.post()" id="message" ng-model="text" placeholder="Message..." />
           </div>
           <div class="col-xs-2 col-md-1">
-            <input type="button" id="send" value="Enviar" />
+            <input type="button" ng-disabled="!selectedRoom" id="send" ng-click="chat.post()" value="Enviar" />
           </div>
         </div>
       </div>
