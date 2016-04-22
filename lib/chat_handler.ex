@@ -38,13 +38,13 @@ defmodule FtChat.ChatHandler do
     end
   end
 
-  def websocket_info({:chat_message, from_user, room, message}, req, st) do
-    {:ok, text} = JSON.encode(%{action: :message, user: from_user, room: room, message: message})
+  def websocket_info({:chat_message, id, from_user, room, message}, req, st) do
+    {:ok, text} = JSON.encode(%{action: :message, id: id, user: from_user, room: room, message: message})
     {:reply, {:text, text}, req, st}
   end
 
   def websocket_info({:chat_history, room, history}, req, st) do
-    history = Enum.map history, (fn {user, message} -> %{user: user, message: message} end)
+    history = Enum.map history, (fn {id, user, message} -> %{id: id, user: user, message: message} end)
     {:ok, text} = JSON.encode(%{action: :history, room: room, history: history})
     {:reply, {:text, text}, req, st}
   end

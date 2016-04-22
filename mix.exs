@@ -14,7 +14,7 @@ defmodule FtChat.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :cowboy],
+    [applications: [:logger, :cowboy, :uuid],
      mod: {FtChat, []},
      env: [
        rooms: ["Alpha", "Beta", "Gamma"],
@@ -39,7 +39,8 @@ defmodule FtChat.Mixfile do
   defp deps do
     [
         {:cowboy, "~> 1.0"},
-        {:json, "~> 0.3.0"}
+        {:json, "~> 0.3.0"},
+        {:uuid, "~> 1.1.3"}
     ]
   end
 end
@@ -59,4 +60,27 @@ defmodule Mix.Tasks.RunNode do
     Mix.Task.run("run", args)
   end
 
+end
+
+defmodule Mix.Tasks.Assets do
+  use Mix.Task
+
+  def run(_) do
+    local_path = "node_modules/coffee-script/bin/coffee"
+    coffee_bin =
+      cond do
+        File.exists? local_path ->
+          local_path
+        Mix.shell.cmd "which coffee" == 0 ->
+          "coffee"
+        true ->
+          nil
+      end
+
+    if coffee_bin == nil do
+      Mix.shell.error "Can't find coffee binary"
+    else
+      Mix.shell.info "Using coffee from #{coffee_bin}"
+    end
+  end
 end

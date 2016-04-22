@@ -22,7 +22,7 @@ defmodule FtChat.ChatRoom do
 
     def all_rooms() do
       :ets.tab2list(@table_name)
-      |> Enum.map (fn {room_name, _pid} ->
+      |> Enum.map(fn {room_name, _pid} ->
         room_name
       end)
     end
@@ -80,7 +80,8 @@ defmodule FtChat.ChatRoom do
   end
 
   def post(chat_room, from_user, message) do
-    RemoteChatRoomClient.cast chat_room, {:post, from_user, message}
+    id = UUID.uuid4
+    RemoteChatRoomClient.cast chat_room, {:post, id, from_user, message}
   end
 
   def handle_message(chat_room, message, level) do
@@ -108,11 +109,9 @@ defmodule FtChat.ChatRoom do
     {:noreply, st}
   end
 
-  def handle_cast({_level, {:post, from_user, message}}, st) do
-    Enum.each st.users, (fn {_, {level, pid}} ->
-      if level == :master do
-        send pid, {:chat_message, from_user, st.name, message}
-      end
+  def handle_cast({_level, {:post, id, from_user, message}}, st) do
+    Enum.each st.users, (fn {_, {_level, pid}} ->
+      send pid, {:chat_message, id, from_user, st.name, message}
     end)
     history =
       if :queue.len(st.history) == 30 do
@@ -121,7 +120,7 @@ defmodule FtChat.ChatRoom do
       else
         st.history
       end
-    st = %{ st | history: :queue.in({from_user, message}, history) }
+    st = %{ st | history: :queue.in({id, from_user, message}, history) }
     {:noreply, st}
   end
 

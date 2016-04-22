@@ -27,6 +27,7 @@ ftChat.service 'ChatService',
       @blacklist = []
       @endPoint = chooseRandomEndpoint []
       @user = undefined
+      @currentRoom = undefined
 
     connect: () ->
       try
@@ -37,6 +38,8 @@ ftChat.service 'ChatService',
           @status = WebSocket.OPEN
           if @onConnectCb
             @onConnectCb(@endPoint)
+            if @currentRoom
+              @join @currentRoom
 
         checkDisconnect = (evt) =>
           if @onDisconnectCb and @ws.readyState in [WebSocket.CLOSED, WebSocket.CLOSING]
@@ -73,13 +76,13 @@ ftChat.service 'ChatService',
       @ws.send(JSON.stringify message)
 
     login: (user) ->
-      # if not @user
       @user = user
       @send
         action: 'login'
         user: user
 
     join: (room) ->
+      @currentRoom = room
       @send
         action: 'join'
         room: room
@@ -118,14 +121,29 @@ ftChat.controller 'ChatController', ['$scope', 'RoomService', 'ChatService',
         @$scope.$apply()
 
         @chatService.onMessage (cmd) =>
-          console.log "Received from #{connectedEndPoint}: #{JSON.stringify cmd}"
+          # console.log "Received from #{connectedEndPoint}: #{JSON.stringify cmd}"
           if cmd.action == 'message'
-            @$scope.rooms[cmd.room].push
-              user: cmd.user
-              text: cmd.message
+            room = @$scope.rooms[cmd.room]
+
+            if cmd.id not in room.ids
+              room.ids.push cmd.id
+              room.messages.push
+                user: cmd.user
+                text: cmd.message
+
+              if room.ids.length > 100
+                room.ids.shift()
+                room.messages.shift()
+
           else if cmd.action == 'history'
-            @$scope.rooms[cmd.room] =
-              {user: hi.user, text: hi.message} for hi in cmd.history
+            room = @$scope.rooms[cmd.room]
+
+            room.messages =
+              ({user: hi.user, text: hi.message} for hi in cmd.history)
+            room.ids =
+              (hi.id for hi in cmd.history)
+
+            console.log(room)
           else
             console.log 'Wrong action: ' + cmd.action
           @$scope.$apply()
@@ -140,7 +158,9 @@ ftChat.controller 'ChatController', ['$scope', 'RoomService', 'ChatService',
         rooms = response.data.rooms.sort()
         @$scope.allRooms = rooms
         for room in rooms
-          @$scope.rooms[room] = []
+          @$scope.rooms[room] =
+            messages: []
+            ids: []
 
     selectRoom: (room) ->
       @chatService.join room

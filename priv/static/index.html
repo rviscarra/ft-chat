@@ -115,9 +115,10 @@
     </div>
     <div id="chat">
       <h4 ng-if="selectedRoom">Canal {{selectedRoom}}</h4>
-      <div class="chat-message" ng-repeat="message in rooms[selectedRoom] track by $index">
+      <div class="chat-message" ng-repeat="message in rooms[selectedRoom].messages track by $index">
         <strong>{{message.user}} dice: </strong>
         <p>{{message.text}}</p>
+        <p>{{JSON.stringify(message)}}</p>
       </div>
     </div>
     <div id="text-container">
